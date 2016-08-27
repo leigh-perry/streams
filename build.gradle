@@ -1,0 +1,13 @@
+apply plugin: 'java'
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile 'com.typesafe.akka:akka-stream_2.11:+'
+    compile 'org.agrona:Agrona:+'
+
+    testCompile 'com.typesafe.akka:akka-stream-testkit_2.11:+'
+    testCompile 'junit:junit:+'
+}
