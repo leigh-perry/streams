@@ -1,10 +1,12 @@
-apply plugin: 'java'
+apply plugin: 'scala'   // compiles java too
 
 repositories {
     jcenter()
 }
 
 dependencies {
+    compile 'io.reactivex:rxjava:+'
+
     compile 'com.typesafe.akka:akka-stream_2.11:+'
     compile 'org.agrona:Agrona:+'
 

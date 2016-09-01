@@ -8,8 +8,11 @@ import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.concurrent.duration.FiniteDuration;
 
+import java.sql.Time;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 public class AkkaStreamsTest {
     private static ActorSystem actorSystem;
@@ -19,6 +22,36 @@ public class AkkaStreamsTest {
     public static void setup() {
         actorSystem = ActorSystem.create();
         materializer = ActorMaterializer.create(actorSystem);
+    }
+
+    @Test
+    public void testZipWithN() throws Exception {
+        final ManualEventStream<Integer> s0 = new ManualEventStream<>();
+        final ManualEventStream<Integer> s1 = new ManualEventStream<>();
+        final ManualEventStream<Integer> s2 = new ManualEventStream<>();
+
+        final Source<String, NotUsed> combined =
+            Source.zipWithN(
+                list -> String.format("%s:%s:%s", list.get(0), list.get(1), list.get(2)),
+                Arrays.asList(s0.observe(), s1.observe(), s2.observe())
+            );
+
+        final TestSubscriber.Probe<String> probe =
+            combined.runWith(TestSink.probe(actorSystem), materializer);
+
+        s0.insert(1);
+        s1.insert(2);
+        s2.insert(3);
+        probe.request(1).expectNext("1:2:3");
+
+        s0.insert(4);
+        FiniteDuration waitTime = FiniteDuration.create(250, TimeUnit.MILLISECONDS);
+        probe.request(1).expectNoMsg(waitTime);
+        s2.insert(5);
+        probe.request(1).expectNoMsg(waitTime);
+
+        s1.insert(6);
+        probe.expectNext("4:6:5");
     }
 
     @Test
@@ -234,7 +267,7 @@ public class AkkaStreamsTest {
         probe.request(1).expectNext("7:2:8:4:5:6");
 
         s4.insert(9, 10);
-        probe.request(3).expectNext("7:2:8:4:9:6", "7:2:8:4:10:6");
+        probe.request(2).expectNext("7:2:8:4:9:6", "7:2:8:4:10:6");
     }
 
     @Test
@@ -277,7 +310,7 @@ public class AkkaStreamsTest {
         probe.request(1).expectNext("8:2:9:4:5:6:7");
 
         s6.insert(10, 11);
-        probe.request(3).expectNext("8:2:9:4:5:6:10", "8:2:9:4:5:6:11");
+        probe.request(2).expectNext("8:2:9:4:5:6:10", "8:2:9:4:5:6:11");
     }
 
     @Test
@@ -323,7 +356,7 @@ public class AkkaStreamsTest {
         probe.request(1).expectNext("9:2:10:4:5:6:7:8");
 
         s6.insert(11, 12);
-        probe.request(3).expectNext("9:2:10:4:5:6:11:8", "9:2:10:4:5:6:12:8");
+        probe.request(2).expectNext("9:2:10:4:5:6:11:8", "9:2:10:4:5:6:12:8");
     }
 
     @Test
@@ -373,6 +406,6 @@ public class AkkaStreamsTest {
         probe.request(1).expectNext("10:2:11:4:5:6:7:8:9");
 
         s8.insert(12, 13);
-        probe.request(3).expectNext("10:2:11:4:5:6:7:8:12", "10:2:11:4:5:6:7:8:13");
+        probe.request(2).expectNext("10:2:11:4:5:6:7:8:12", "10:2:11:4:5:6:7:8:13");
     }
 }

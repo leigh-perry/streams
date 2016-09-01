@@ -14,6 +14,7 @@ import akka.stream.javadsl.Source;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
 
@@ -300,13 +301,7 @@ public class AkkaStreams {
     }
 
     private static boolean areAllAvailable(final Object[] objects) {
-        for (final Object o : objects) {
-            if (o == null) {
-                return false;
-            }
-        }
-
-        return true;
+        return Stream.of(objects)
+            .allMatch(o -> o != null);
     }
 }
-
